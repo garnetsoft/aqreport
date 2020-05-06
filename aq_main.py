@@ -100,6 +100,12 @@ def get_indicator_plots(prices):
                      height=110*len(prices.columns),
                      )
     
+    image_file = f'/tmp/AQ_indicator_{os.path.basename(config["ticker_file"]).replace(".csv",".png")}'
+    print('xxxx saving image file to: ', image_file)
+    
+    fig.write_image(image_file)
+    #plotly.io.write_image(fig=data,file="/tmp/img1.png", format="png",scale=None, width=None, height=None)
+
     chart = plotly.offline.plot(fig, include_plotlyjs=False, output_type='div')
 
     return chart
