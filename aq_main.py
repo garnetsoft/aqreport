@@ -98,6 +98,7 @@ def get_indicator_plots(prices):
     #fig.update_layout(width=400, height=200 )
     fig.update_layout(title=f'price indicator plots: from {config["start_date"]}',
                      grid = {'rows': len(prices.columns), 'columns': 1, 'pattern': "independent"},
+                     width=110*len(prices.columns)*0.68,
                      height=110*len(prices.columns),
                      )
     
