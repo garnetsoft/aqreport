@@ -1,0 +1,25 @@
+<meta charset="utf-8">
+<title>{{ title }}</title>
+
+<!-- Bootstrap CSS CDN -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+<!-- Our Custom CSS -->
+<link rel="stylesheet" href="static/app.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Plotly JS -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<!-- Our Custom JS -->
+<script charset="utf-8" src="static/app.js"></script>
+
+
+<div class="container">
+    <div class="row">
+    <h3>AQ Indicators Report: {{ results }}, from: {{ start_date }} </h3>
+    </div>
+    <hr>
+    {% for c, graph in charts.items() %}
+    <div class="row">
+        <div class="col-sm-12">{{ graph|safe }}</div>
+    </div>
+    {% endfor %}
+</div>
