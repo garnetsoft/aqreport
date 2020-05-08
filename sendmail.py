@@ -25,6 +25,11 @@ import qpython
 from qpython import qconnection
 print('qPython %s Cython extensions enabled: %s' % (qpython.__version__, qpython.__is_cython_enabled__))
 
+from os.path import expanduser
+home = expanduser("~")
+from pathlib import Path
+home = str(Path.home())
+
 
 ##################################################################
 # global properties 
@@ -163,7 +168,7 @@ server.starttls()
 # send the email as normal.
 server.set_debuglevel(1)
 
-with open('/home/ubuntu/.goog/pass.txt') as f:
+with open(f'{home}/.goog/pass.txt') as f:
     password = f.read()
 server.login(from_addr, password)
 
