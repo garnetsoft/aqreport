@@ -71,7 +71,7 @@ print('xxxx running report for ticker_file: ', ticker_file)
 # get user input
 # input sender email address and password:
 from_addr = config['from_addr']
-password = config['password']
+#password = config['password']
 # input receiver email address.
 to_addr = config['to_addr']
 # input smtp server ip address:
@@ -163,7 +163,10 @@ server.starttls()
 # send the email as normal.
 server.set_debuglevel(1)
 
+with open('/home/ubuntu/.goog/pass.txt') as f:
+    password = f.read()
 server.login(from_addr, password)
+
 server.sendmail(from_addr, [to_addr], msg.as_string())
 server.quit()
 

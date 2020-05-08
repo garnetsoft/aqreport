@@ -2,6 +2,7 @@ import os
 import sys
 import pandas as pd
 import numpy as np
+import time
 
 from pandas_datareader import data
 import ffn
@@ -101,7 +102,7 @@ def get_indicator_plots(prices):
 
     #fig.update_layout(height = 200, margin = {'t':0, 'b':0, 'l':0})
     #fig.update_layout(width=400, height=200 )
-    fig.update_layout(title='price indicator plots: ',
+    fig.update_layout(title=f'price indicator plots: from {config["start_date"]}',
                      grid = {'rows': len(prices.columns), 'columns': 1, 'pattern': "independent"},
                      height=110*len(prices.columns),
                      )
@@ -109,7 +110,13 @@ def get_indicator_plots(prices):
     image_file = f'/tmp/AQ_indicator_{os.path.basename(config["ticker_file"]).replace(".csv",".png")}'
     print('xxxx saving image file to: ', image_file)
     
+    #plotly.io.orca.ensure_server()
+    #time.sleep(10)
+
+    #fig2= go.Figure({'data': [{'y': [4, 2, 3, 4]}], 'layout': {'title': 'Test Plot', 'font': dict(size=16)}})
     fig.write_image(image_file)
+
+    print('XXXX DONE saving image file to: ', image_file)
     #plotly.io.write_image(fig=data,file="/tmp/img1.png", format="png",scale=None, width=None, height=None)
 
     chart = plotly.offline.plot(fig, include_plotlyjs=False, output_type='div')
@@ -277,7 +284,7 @@ def main():
 
     print('xxxx start_in: ', start_in)
 
-    tickers = list(pd.read_csv(ticker_file).Symbol.unique())
+    tickers = list(pd.read_csv(ticker_file).ticker.unique())
     df = get_yahoo_data(tickers, start_in)
 
     return generate_html_report(df, os.path.basename(ticker_file))   
