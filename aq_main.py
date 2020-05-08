@@ -9,6 +9,7 @@ import datetime
 import configparser
 from datetime import datetime, timedelta
 from sys import argv
+import pickle
 
 import plotly
 import plotly.graph_objects as go
@@ -21,12 +22,17 @@ from jinja2 import Environment, FileSystemLoader
 company = "AQ Analytics"
 search_list = []
 
+
 def load_models():
     file_name = "models/model_file.p"
     with open(file_name, 'rb') as pickled:
        data = pickle.load(pickled)
        model = data['model']
     return model
+
+
+def rebase_series(series):
+    return (series/series.iloc[0]) * 100
 
 
 def get_yahoo_data(tickers, start_in="2020-01-01", end=datetime.now().date().strftime('%Y-%m-%d')):  
@@ -111,6 +117,65 @@ def get_indicator_plots(prices):
     return chart
 
 
+
+def plot_indicator_ranking(df):
+    df_stats = df.describe()
+
+    fig = go.Figure(go.Indicator(
+        mode = "number+gauge+delta", value = df[-1],
+        domain = {'x': [0, 1], 'y':[0, 1]},
+        delta = {'reference': df[-2], 'position': "top"},
+        title = {'text':f"<b>{df_stats.name.upper()}</b><br><span style='color: gray; font-size:0.8em'>{100*np.log(df[-1]/df.mean()):.2f}%</span>", 'font': {"size": 14}},
+        gauge = {
+            'shape': "bullet",
+            'axis': {'range': [df_stats['min'], df_stats['max']]},
+            'threshold': {
+                'line': {'color': "red", 'width': 2},
+                'thickness': 0.75, 'value': df_stats['mean']},
+            'bgcolor': "white",
+            'steps': [
+                {'range': [df_stats['min'], df_stats['25%']], 'color': "cyan"},
+                {'range': [df_stats['25%'], df_stats['50%']], 'color': "royalblue"},
+                {'range': [df_stats['50%'], df_stats['75%']], 'color': "cyan"},
+                {'range': [df_stats['75%'], df_stats['max']], 'color': "royalblue"}],
+            'bar': {'color': "darkblue"}}))
+
+    fig.update_layout(height = 220)
+    #fig.show()
+    
+    return fig
+
+
+def gen_indicator_plots(prices):
+    #df = ffn.get(ticker, start=start)
+    rb_prices = rebase_series(prices)
+    prices_stats = rb_prices.describe()
+
+    # rank by distance from mean or, -1 std
+    prices_stats.loc['last'] = list(rb_prices.iloc[-1])
+    prices_stats.loc['ret_from_mean'] = np.log(prices_stats.loc['last']/prices_stats.loc['mean'])
+    prices_stats_sorted = prices_stats.sort_values('ret_from_mean', axis=1)
+
+    charts = {}
+
+    for j, c in enumerate(prices_stats_sorted.columns):
+        df = prices[c]        
+        fig = plot_indicator_ranking(df)
+
+        #image_file = f'/tmp/AQ_indicator_{os.path.basename(config["ticker_file"]).replace(".csv",".png")}'
+        image_file = f'/tmp/AQ_indicator_{c}.png'
+        print('xxxx saving image file to: ', image_file)
+        
+        fig.write_image(image_file)
+        #plotly.io.write_image(fig=data,file="/tmp/img1.png", format="png",scale=None, width=None, height=None)
+
+        chart = plotly.offline.plot(fig, include_plotlyjs=False, output_type='div')
+
+        charts[c] = chart
+
+    return charts
+
+
 # Flask app
 #app = Flask(__name__)
 
@@ -128,13 +193,16 @@ def generate_gem_html(df, ticker_file):
     #graph = get_indicator_plots(prices)
     #print('xxxx DEBUG: graph - ', graph)
 
+    charts = gen_indicator_plots(prices)
+
     html_out = template.render(        
         company=company,
         results=ticker_file,
         start_date=config['start_date'],
         
         # for display - 
-        graph=graph
+        graph=graph, 
+        charts=charts, # sorted by return from mean
     )
     
     return html_out
