@@ -52,65 +52,28 @@ def load_app_config(config_file):
         raise Exception('Error init/start Services. %s' %e) 
 
 
-# set config file to be same as main script    
-config_file = os.path.basename(argv[0]).replace(".py", ".config")
-print('xxxx config_file: ',config_file)
+def get_image_list(ticker_file, prefix="AQ_indicator", img_type="png"):
+    tickers = list(pd.read_csv(ticker_file).Symbol)
+    image_files = []
 
-if len(sys.argv) < 2:
-    usage()
-    #sys.exit(-1)
-    load_app_config(config_file)
-else:
-    # load input configs
-    load_app_config(sys.argv[1])
-    
-ticker_file = config['ticker_file']
-print('xxxx running report for ticker_file: ', ticker_file)
+    for ticker in tickers:
+        image_files.append(f'{prefix}_{ticker}.{img_type}')
+    print('xxxx DEBUG: image_files: ', image_files)
+
+    return image_files
 
 
-# get user input
-# input sender email address and password:
-from_addr = config['from_addr']
-password = config['password']
-# input receiver email address.
-to_addr = config['to_addr']
-# input smtp server ip address:
-smtp_server = config['smtp_server']
-smtp_port = config['smtp_port']
+def get_image_rank(tickers, prefix="AQ_indicator", img_type="png"):
+    """
+    image_files = []
+    for ticker in tickers:
+        image_files.append(f'{prefix}_{ticker}.{img_type}')
+    print('xxxx DEBUG: image_files: ', image_files)
 
-#1. simple html content
-#msg = MIMEText('<html><body><h1>Hello World</h1><p>this is hello world from <a href="http://www.python.org">Python</a>...</p></body></html>', 'html', 'utf-8')
+    return image_files
+    """
+    return [f'{prefix}_{ticker}.{img_type}' for ticker in tickers]
 
-#2. Send Email With Attachments.
-
-# email object that has multiple part:
-#msg = MIMEMultipart()
-msg = MIMEMultipart('alternative')
-msg['From'] = from_addr
-msg['To'] = to_addr
-msg['Subject'] = f'{config["subject"]} {os.path.basename(ticker_file).replace(".csv","")} - {datetime.now().strftime("%Y-%m-%d")}' 
-
-
-# support both plain text and html
-#msg.attach(MIMEText('hello this is a plain text version.', 'plain', 'utf-8'))
-#msg.attach(MIMEText('<html><body><h1>Hello this is html version</h1></body></html>', 'html', 'utf-8'))
-
-# attache a MIMEText object to save email content
-msg_content = MIMEText('hello this is a plain text version - send with attachment...', 'plain', 'utf-8')
-msg.attach(msg_content)
-
-# add section headers
-sections = config["sections"].split(",")
-
-### load images 
-#image_files = ['img1.png', 'fig1.png']
-#image_files = config["images"].split(",")
-tickers = list(pd.read_csv(ticker_file).Symbol)
-image_files = []
-
-for ticker in tickers:
-    image_files.append(f'AQ_indicator_{ticker}.png')
-print('xxxx DEBUG: image_files: ', image_files)
 
 def add_image_files(msg, image_files):
     for i, image in enumerate(image_files):
@@ -131,36 +94,89 @@ def add_image_files(msg, image_files):
             msg.attach(mime)
 
 
-add_image_files(msg, image_files)
+def add_image_content(msg, image_files):
+    image_content = ''
+    for i, image in enumerate(image_files):
+        #image_content += f'<h1>{sections[i]} - </h1><p><img src="cid:{i}"></p>'
+        image_content += f'<p><img src="cid:{i}"></p>'
 
-# embedded the image in the email content
-#msg.attach(MIMEText('<html><body><h1>Hello HTML</h1><p><img src="cid:0"></p><h1>2nd Image.</h1><p><img src="cid:1"></p></body></html>', 'html', 'utf-8'))
-#msg.attach(MIMEText('<html><body><h1>2nd Image.</h1><p><img src="cid:1"></p></body></html>', 'html', 'utf-8'))
+    msg.attach(MIMEText(f'<html><body> {image_content} </body></html>', 'html', 'utf-8'))
+
+
+def send_image_files(image_files):
+    from_addr = config['from_addr']
+    password = config['password']
+    to_addr = config['to_addr']
+    smtp_server = config['smtp_server']
+    smtp_port = config['smtp_port']
+
+    # add section headers
+    sections = config["sections"].split(",")
+
+    # email object that has multiple part:
+    #msg = MIMEMultipart()
+    msg = MIMEMultipart('alternative')
+    msg['From'] = from_addr
+    msg['To'] = to_addr
+    msg['Subject'] = f'{config["subject"]} {os.path.basename(ticker_file).replace(".csv","")} - {datetime.now().strftime("%Y-%m-%d")}' 
+
+    # support both plain text and html
+    #msg.attach(MIMEText('hello this is a plain text version.', 'plain', 'utf-8'))
+    #msg.attach(MIMEText('<html><body><h1>Hello this is html version</h1></body></html>', 'html', 'utf-8'))
+
+    # attache a MIMEText object to save email content
+    msg_content = MIMEText('hello this is a plain text version - send with attachment...', 'plain', 'utf-8')
+    msg.attach(msg_content)
+
+    add_image_files(msg, image_files)
+    add_image_content(msg, image_files)
+
+    # define smtp server domain and port number.
+    #smtp_server = 'smtp.yahoo.com'
+    #smtp_port = 989
+    smtp_server = 'smtp.gmail.com'
+    smtp_port = 587
+
+    # create smtp server object.
+    #server = smtplib.SMTP(smtp_server, 25)
+    server = smtplib.SMTP(smtp_server, smtp_port)
+    # use ssl protocol to secure the smtp session connection, all the data transferred by the session will be secured. 
+    server.starttls()
+    # send the email as normal.
+    server.set_debuglevel(1)
+
+    server.login(from_addr, password)
+    server.sendmail(from_addr, [to_addr], msg.as_string())
+    server.quit()
+
+    print('xxxx DONE - email sent.')
 
 image_content = ''
 for i, image in enumerate(image_files):
     #image_content += f'<h1>{sections[i]} - </h1><p><img src="cid:{i}"></p>'
     image_content += f'<p><img src="cid:{i}"></p>'
 
-msg.attach(MIMEText(f'<html><body> {image_content} </body></html>', 'html', 'utf-8'))
+#### main ####
+if __name__ == '__main__':
+    # set config file to be same as main script
+    config_file = os.path.basename(argv[0]).replace(".py", ".config")
+    print('xxxx config_file: ',config_file)
+
+    if len(sys.argv) < 2:
+        usage()
+        #sys.exit(-1)
+        load_app_config(config_file)
+    else:
+        # load input configs
+        load_app_config(sys.argv[1])
+        
+    ticker_file = config['ticker_file']
+    print('xxxx running report for ticker_file: ', ticker_file)
+
+    #image_files = get_image_list(ticker_file)
+    tickers = list(pd.read_csv(ticker_file).ticker)    
+    image_files = get_image_rank(tickers)
+
+    send_image_files(image_files)
 
 
-# define smtp server domain and port number.
-#smtp_server = 'smtp.yahoo.com'
-#smtp_port = 989
-smtp_server = 'smtp.gmail.com'
-smtp_port = 587
-
-# create smtp server object.
-#server = smtplib.SMTP(smtp_server, 25)
-server = smtplib.SMTP(smtp_server, smtp_port)
-# use ssl protocol to secure the smtp session connection, all the data transferred by the session will be secured. 
-server.starttls()
-# send the email as normal.
-server.set_debuglevel(1)
-
-server.login(from_addr, password)
-server.sendmail(from_addr, [to_addr], msg.as_string())
-server.quit()
-
-print('xxxx DONE - email sent.')
