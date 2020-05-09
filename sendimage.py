@@ -140,7 +140,7 @@ add_image_files(msg, image_files)
 image_content = ''
 for i, image in enumerate(image_files):
     #image_content += f'<h1>{sections[i]} - </h1><p><img src="cid:{i}"></p>'
-    image_content += f'<h1>{tickers[i]} - </h1><p><img src="cid:{i}"></p>'
+    image_content += f'<p><img src="cid:{i}"></p>'
 
 msg.attach(MIMEText(f'<html><body> {image_content} </body></html>', 'html', 'utf-8'))
 
