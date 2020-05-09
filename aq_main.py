@@ -18,6 +18,8 @@ import plotly.graph_objects as go
 from flask import Flask, render_template, request, send_file, jsonify
 from jinja2 import Environment, FileSystemLoader
 
+from sendimage2 import SendMail2
+
 
 ### global variables ###
 company = "AQ Analytics"
@@ -187,6 +189,14 @@ def gen_indicator_plots(prices):
 # Flask app
 #app = Flask(__name__)
 
+def email_images(ranked_tickers, config_file):
+    sm = SendImage2()
+    sm.load_mail_config(config_file)
+    image_files = sm.get_image_rank(ranked_tickers)
+    sm.send_image_files(image_files)
+
+    return None
+
 
 def generate_gem_html(df, ticker_file):
     env = Environment(loader=FileSystemLoader('.'))
@@ -202,6 +212,16 @@ def generate_gem_html(df, ticker_file):
     #print('xxxx DEBUG: graph - ', graph)
 
     charts = gen_indicator_plots(prices)
+
+    ## email charts -
+    if config['send_image']:
+        ranked_tickers = list(charts.keys())
+        config_file = config['mail_config']
+        print("xxxx RANK charts: ", ranked_tickers)
+        print("xxxx config_file: ", config_file)
+
+        email_images(ranked_tickers, config_file)
+
 
     html_out = template.render(        
         company=company,
