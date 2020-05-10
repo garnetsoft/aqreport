@@ -221,7 +221,7 @@ def gen_indicator_plots(prices):
 
         #image_file = f'/tmp/AQ_indicator_{os.path.basename(config["ticker_file"]).replace(".csv",".png")}'
         image_file = f'/tmp/AQ_indicator_{c}.png'
-        print('xxxx saving image file to: ', image_file)
+        print(f'xxxx saving {j} image file to: {image_file}')
         
         fig.write_image(image_file)
         #plotly.io.write_image(fig=data,file="/tmp/img1.png", format="png",scale=None, width=None, height=None)
