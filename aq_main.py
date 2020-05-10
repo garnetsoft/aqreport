@@ -18,7 +18,7 @@ import plotly.graph_objects as go
 from flask import Flask, render_template, request, send_file, jsonify
 from jinja2 import Environment, FileSystemLoader
 
-from sendimage2 import SendMail2
+from sendimage2 import SendImage2
 
 
 ### global variables ###
@@ -156,6 +156,52 @@ def plot_indicator_ranking(df):
     return fig
 
 
+def plot_indicator_ranking2(df):
+    df_stats = df.describe()
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Indicator(
+        mode = "number+gauge+delta", value = df[-1],
+        delta = {'reference': df[-2], 'position': "top"},
+        title = {'text':f"<b>{df_stats.name.upper()}</b><br><span style='color: gray; font-size:0.8em'>{100*np.log(df[-1]/df.mean()):.2f}%</span>", 'font': {"size": 14}},
+        gauge = {
+            'shape': "bullet",
+            'axis': {'range': [df_stats['min'], df_stats['max']]},
+            'threshold': {
+                'line': {'color': "red", 'width': 2},
+                'thickness': 0.75, 'value': df_stats['mean']},
+            'bgcolor': "white",
+            'steps': [
+                {'range': [df_stats['min'], df_stats['25%']], 'color': "cyan"},
+                {'range': [df_stats['25%'], df_stats['50%']], 'color': "royalblue"},
+                {'range': [df_stats['50%'], df_stats['75%']], 'color': "cyan"},
+                {'range': [df_stats['75%'], df_stats['max']], 'color': "royalblue"}],
+            'bar': {'color': "black"}},
+
+        domain = {'x': [0, 1], 'y':[0, 0.2]},
+        #domain = {'row': 1, 'column': 1}
+        ))
+
+    fig.add_trace(go.Scatter(
+        x = df.index,
+        y = df,
+        name = df.name,
+        ))
+
+
+    fig.update_layout(title_text=f'<b>Prices stats - {df.name.upper()}, from: {df.index[0].strftime("%Y-%m-%d")}</b>',
+        grid = {'rows': 2, 'columns': 1, 'pattern': "independent"},
+        #height=600, width=600,
+    )
+    #fig.update_layout(height = 220)
+    #fig.show()
+
+
+    return fig
+
+
+
 def gen_indicator_plots(prices):
     #df = ffn.get(ticker, start=start)
     rb_prices = rebase_series(prices)
@@ -170,7 +216,7 @@ def gen_indicator_plots(prices):
 
     for j, c in enumerate(prices_stats_sorted.columns):
         df = prices[c]        
-        fig = plot_indicator_ranking(df)
+        fig = plot_indicator_ranking2(df)
 
         #image_file = f'/tmp/AQ_indicator_{os.path.basename(config["ticker_file"]).replace(".csv",".png")}'
         image_file = f'/tmp/AQ_indicator_{c}.png'
@@ -189,11 +235,13 @@ def gen_indicator_plots(prices):
 # Flask app
 #app = Flask(__name__)
 
-def email_images(ranked_tickers, config_file):
+def email_images(ranked_tickers, config_file, ticker_file):
+    print('xxxx email_images: ',ranked_tickers)
+
     sm = SendImage2()
     sm.load_mail_config(config_file)
     image_files = sm.get_image_rank(ranked_tickers)
-    sm.send_image_files(image_files)
+    sm.send_image_files(image_files, ticker_file)
 
     return None
 
@@ -220,7 +268,7 @@ def generate_gem_html(df, ticker_file):
         print("xxxx RANK charts: ", ranked_tickers)
         print("xxxx config_file: ", config_file)
 
-        email_images(ranked_tickers, config_file)
+        email_images(ranked_tickers, config_file, ticker_file)
 
 
     html_out = template.render(        
@@ -305,7 +353,8 @@ def main():
 
     print('xxxx start_in: ', start_in)
 
-    tickers = list(pd.read_csv(ticker_file).ticker.unique())
+    tickers = ['SPY']
+    tickers += list(pd.read_csv(ticker_file).ticker.unique())
     df = get_yahoo_data(tickers, start_in)
 
     return generate_html_report(df, os.path.basename(ticker_file))   

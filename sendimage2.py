@@ -107,7 +107,7 @@ class SendImage2(object):
         msg.attach(MIMEText(f'<html><body> {image_content} </body></html>', 'html', 'utf-8'))
 
 
-    def send_image_files(self, image_files):
+    def send_image_files(self, image_files, ticker_fname):
         from_addr = self.config['from_addr']
         password = self.config['password']
         to_addr = self.config['to_addr']
@@ -117,14 +117,13 @@ class SendImage2(object):
         # add section headers
         subject = self.config['subject']
         sections = self.config["sections"].split(",")
-        ticker_filename = os.path.basename(self.config['ticker_file']).replace(".csv","")
 
         # email object that has multiple part:
         #msg = MIMEMultipart()
         msg = MIMEMultipart('alternative')
         msg['From'] = from_addr
         msg['To'] = to_addr
-        msg['Subject'] = f'{subject} {ticker_filename} - {datetime.now().strftime("%Y-%m-%d")}' 
+        msg['Subject'] = f'{subject} {ticker_fname} - {datetime.now().strftime("%Y-%m-%d")}' 
 
         # support both plain text and html
         #msg.attach(MIMEText('hello this is a plain text version.', 'plain', 'utf-8'))
@@ -176,6 +175,7 @@ if __name__ == '__main__':
 
     #image_files = get_image_list(ticker_file)
     tickers = list(pd.read_csv(ticker_file).ticker)    
-    image_files = sm.get_image_rank(tickers)
+    ticker_fname = os.path.basename(ticker_file).replace(".csv","")
+    image_files = sm.get_image_rank(tickers, ticker_fname)
 
     sm.send_image_files(image_files)
