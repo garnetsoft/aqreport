@@ -70,6 +70,7 @@ def get_indicator_plots(prices):
     for j, c in enumerate(prices.columns):
         df = prices[c]
         df_stats = df.describe()
+        #print(f'XXXX DEBUG: {c}, {df_stats}')
 
         colors = ['lightgray', 'gray', 'lightgray', 'gray', 'lightgray', 'gray', 'lightgray', 'gray']
         rg = [['min','25%'], ['25%', '50%'], ['50%','75%'],['75%','max']]
@@ -353,8 +354,10 @@ def main():
 
     print('xxxx start_in: ', start_in)
 
-    tickers = ['SPY']
-    tickers += list(pd.read_csv(ticker_file).ticker.unique())
+    tickers = list(pd.read_csv(ticker_file).ticker.unique())
+    if not 'SPY' in tickers:
+        tickers.insert(0, 'SPY')
+
     df = get_yahoo_data(tickers, start_in)
 
     return generate_html_report(df, os.path.basename(ticker_file))   
