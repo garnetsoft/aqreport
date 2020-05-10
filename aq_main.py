@@ -191,7 +191,14 @@ def plot_indicator_ranking2(df):
         ))
 
 
-    fig.update_layout(title_text=f'<b>Prices stats - {df.name.upper()}, from: {df.index[0].strftime("%Y-%m-%d")}</b>',
+    #sec_name = sec_df.iloc[sec_df.index==df.name.upper()].get('Asset', [df.name])[0]
+    sec_name = sec_names.get(df.name)
+    if sec_name:
+        sec_name = sec_name[config['sec_name']]
+    else:
+        sec_name = df.name
+
+    fig.update_layout(title_text=f'<b>Prices stats - {sec_name}, from: {df.index[0].strftime("%Y-%m-%d")}</b>',
         grid = {'rows': 2, 'columns': 1, 'pattern': "independent"},
         #height=600, width=600,
     )
@@ -247,13 +254,12 @@ def email_images(ranked_tickers, config_file, ticker_file):
     return None
 
 
-def generate_gem_html(df, ticker_file):
+def generate_html_template(prices, ticker_file):
     env = Environment(loader=FileSystemLoader('.'))
     template = env.get_template("templates/{}".format(config['template_file']))
 
-    print('xxxx DEBUG prices df: ',df.tail())
+    print('xxxx DEBUG prices df: ',prices.tail())
 
-    prices = df.copy()
     plot_func = config['plot_func']+'(prices)'
     print('xxxx calling graph func: ', plot_func)
     graph = eval(plot_func)
@@ -285,8 +291,8 @@ def generate_gem_html(df, ticker_file):
     return html_out
 
 
-def generate_html_report(df, ticker_file):
-    html = generate_gem_html(df, ticker_file)
+def generate_html_report(prices, ticker_file):
+    html = generate_html_template(prices, ticker_file)
 
     outputdir=config['output_dir']
 
@@ -295,7 +301,7 @@ def generate_html_report(df, ticker_file):
         ticker_file, datetime.today().date().strftime('%Y%m%d')))
     
     outfile = outfile.replace('.csv','')
-    # df.to_csv(outfile.replace(".html", ".csv"))
+    # prices.to_csv(outfile.replace(".html", ".csv"))
 
     with open(outfile,"w") as file:
         file.write(html)
@@ -310,6 +316,9 @@ def generate_html_report(df, ticker_file):
 ##################################################################
 
 config = {}
+sec_df = pd.DataFrame()
+sec_names = {}
+
 
 def usage():
     print("usage: python application.py <configfile>")
@@ -354,13 +363,18 @@ def main():
 
     print('xxxx start_in: ', start_in)
 
-    tickers = list(pd.read_csv(ticker_file).ticker.unique())
+    global sec_names
+    sec_df = pd.read_csv(ticker_file)
+    sec_df = sec_df.set_index('ticker')
+    sec_names = sec_df.to_dict('index')
+
+    tickers = list(sec_df.index)
     if not 'SPY' in tickers:
         tickers.insert(0, 'SPY')
 
-    df = get_yahoo_data(tickers, start_in)
+    prices = get_yahoo_data(tickers, start_in)
 
-    return generate_html_report(df, os.path.basename(ticker_file))   
+    return generate_html_report(prices, os.path.basename(ticker_file))   
 
 
 #### app main ####
