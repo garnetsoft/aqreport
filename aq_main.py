@@ -194,7 +194,9 @@ def plot_indicator_ranking2(df):
     #sec_name = sec_df.iloc[sec_df.index==df.name.upper()].get('Asset', [df.name])[0]
     sec_name = sec_names.get(df.name)
     if sec_name:
-        sec_name = sec_name[config['sec_name']]
+        #sec_name = sec_name[config['sec_name']]
+        print('xxxx DEBUG: sec_name:', sec_name)
+        sec_name = sec_name.get(config.get('sec_name'), df.name)
     else:
         sec_name = df.name
 
